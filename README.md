@@ -1,64 +1,140 @@
-# Punk Arcade · Punk-man: Escape Riot
+# Punk Arcade
 
-A static Astro arcade with an original Phaser maze escape game. Collect 30 charges, use scarce weapons to get past three corporate ghost-drones, and reach the top-right exit before the 45-second lockdown.
+## Human Product & Agent Codes
 
-## Run locally
+Punk Arcade is an evolving web arcade where a human defines the product direction and different coding agents help explore, build, test, and extend the games.
 
-Requires Node 22.12+ and pnpm 10.33.3 (pinned in `package.json`).
+The first game is **Punk-man: Escape Riot**: a fast post-punk cyberpunk maze game inspired by the language of classic arcade games. Collect charges, improvise weapons, survive security ghost-drones, trigger the lockdown, and escape before the facility closes around you.
+
+The project is also an ongoing experiment. Claude, Codex, Gemini, and other agents may contribute different implementations, ideas, visual directions, debugging approaches, and features. The goal is not to let agents decide what the product is. The goal is to learn how human product judgment and agent-assisted coding work together when making small, playable experiences.
+
+## What We Are Exploring
+
+- How quickly a human-led idea can become a playable web game.
+- How different coding agents reason about the same product and technical constraints.
+- Which parts of game development benefit most from agent collaboration.
+- How to preserve a coherent product vision while experiments come from different tools.
+- Whether a small collection of polished microgames can grow from one shared web arcade.
+
+## Principles
+
+- **Human product, agent codes:** the human owns the product intent, taste, priorities, and final decisions; agents help with implementation and exploration.
+- **Playable early:** every meaningful change should move toward something that can be played, tested, or experienced.
+- **Small and focused:** prefer one strong mechanic over a large unfinished system.
+- **Document the why:** record important product and technical decisions so future humans and agents can understand the context.
+- **Credit the experiment:** when an agent meaningfully contributes to a feature or direction, record it in the project history or feature notes.
+- **Keep the work original:** inspirations are welcome, but code, art, audio, and writing should be original or properly licensed.
+
+## Current Games
+
+### Punk-man: Escape Riot
+
+An arcade maze escape game with a grimy neon cyberpunk look.
+
+- Gather charges instead of clearing the entire maze.
+- Use scarce improvised weapons to create openings.
+- Find the rare robotic-jaw pickup to consume a nearby ghost-drone.
+- Trigger the final alarm and reach the exit before lockdown.
+- Play with keyboard controls on desktop or a virtual stick and action buttons on touch devices.
+
+The ghost-drones keep the rounded floating silhouette and directional eyes of classic maze-game ghosts, but reinterpret them as damaged corporate surveillance machines.
+
+## Roadmap
+
+### Foundation
+
+- Establish the shared Astro arcade shell.
+- Build and tune the Punk-man vertical slice.
+- Test desktop and mobile controls.
+- Deploy preview builds to Vercel.
+
+### Agent experiments
+
+- Rebuild a small feature with different coding agents and compare the results.
+- Try alternative enemy behaviors, weapon interactions, and visual treatments.
+- Document which approaches were fast, clear, robust, or difficult to maintain.
+
+### Arcade growth
+
+- Add more small games with distinct mechanics and visual identities.
+- Reuse only the site-level infrastructure that genuinely helps.
+- Consider shared scores, collections, or player profiles only after the games are fun independently.
+
+## Quick Start
+
+Requirements:
+
+- Node.js 22.12 or newer.
+- pnpm 10.33.3, pinned in `package.json`.
+
+Install dependencies and start the development server:
 
 ```sh
 pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-Development starts **in background mode**. Use the URL printed by Astro (normally `http://localhost:4321`; the port increments if occupied).
+Development follows the repository instructions and runs in background mode. Use the printed Astro URL, normally `http://localhost:4321`.
 
-```sh
-pnpm dev:status
-pnpm dev:logs
-pnpm dev:stop
-```
+## Commands
 
-After adding dependencies, stop and restart the dev server to avoid stale optimized modules.
+| Command | Description |
+| --- | --- |
+| `pnpm dev` | Start Astro development in background mode. |
+| `pnpm dev:status` | Check the background development server. |
+| `pnpm dev:logs` | Read development server logs. |
+| `pnpm dev:stop` | Stop the background development server. |
+| `pnpm verify` | Run type checking, game-rule tests, and the production build. |
+| `pnpm test:browser` | Run the real-browser regression suite against a running server. |
+| `pnpm build` | Create the static production build in `dist/`. |
+| `pnpm preview` | Preview the production build locally. |
 
-## Play
+## Routes
 
-- `/` — catalogue and game poster.
+- `/` — arcade catalogue and Punk-man poster.
 - `/games/punk-man` — playable game.
 - `/credits` — art, audio, technology, and playability notes.
 
-Arrow keys / WASD move; directions persist and turns queue at openings. Space fires; Q cycles weapons; 1/2/3 selects; P/Escape pauses. Touch devices have a virtual stick and fire/switch buttons. Start with one EMP shot, scavenge more ammunition, and collect the rare eight-second jaw pickup to consume drones. Leaving the tab pauses the run.
+## Architecture
 
-## Verify and build
+Astro owns the static web shell, catalogue, routes, shared layout, and credits. Phaser owns each game's runtime. A future game should be isolated under `src/games/<game-id>/` and mounted by its own Astro route.
 
-```sh
-pnpm verify        # Type checking, 9 game-rule tests, static production build
-pnpm test:browser  # 8 Chrome tests against a running dev server
-pnpm preview --host 127.0.0.1 --port 4323
-TEST_BASE_URL=http://127.0.0.1:4323 pnpm test:browser
+```text
+src/
+├── components/              Shared site components
+├── layouts/                 Shared page frame
+├── pages/                   Static routes and game entry points
+├── styles/                  Site-level styles
+└── games/
+    └── punk-man/            Game rules, rendering, input, audio, and assets
 ```
 
-Browser tests default to locally installed macOS Chrome. Set `CHROME_PATH` to another installed Chrome executable on other systems. `TEST_BASE_URL` defaults to `http://localhost:4321`. Tests include a real loss/restart run and take around 25 seconds. Node's built-in TypeScript stripping runs model tests without another runtime dependency.
+The current game separates deterministic rules from rendering where practical, which makes game behavior easier to test and gives agents a smaller surface to modify safely.
 
-Production output is `dist/`. The site needs no environment variables, backend, database, or SSR adapter. Vercel can use the Astro preset, `pnpm build`, and `dist` output. Deployment has not been performed.
+## Agent Collaboration
 
-## Source map
+Agents are treated as contributors to a human-led product process. Before changing the project, an agent should read `AGENTS.md`, the relevant product or technical documents, and the current implementation.
 
-| Path | Responsibility |
-| --- | --- |
-| `src/pages/` | Static catalogue, game page, credits |
-| `src/layouts/Site.astro`, `src/styles/global.css` | Shared site frame and visual language |
-| `src/components/MazePoster.astro` | Original SVG catalogue art |
-| `src/games/punk-man/map.ts` | Maze, navigation, balancing constants |
-| `src/games/punk-man/model.ts` | Deterministic rules, AI, weapons, scoring, lifecycle |
-| `src/games/punk-man/render.ts` | Procedural Phaser maze and characters |
-| `src/games/punk-man/audio.ts` | Original synthesized music and effects |
-| `src/games/punk-man/game.ts` | Phaser bootstrap, scene, audio and effects |
-| `src/games/punk-man/controller.ts` | Accessible DOM HUD and input bridge |
-| `tests/` | Game rules and real-browser regression tests |
+Useful contribution notes include:
 
-## Project docs
+- What was changed and why.
+- Which agent or workflow produced the change.
+- How the change was verified.
+- Any trade-offs, unfinished edges, or follow-up ideas.
+
+The agent is encouraged to challenge scope and identify risks, but product direction remains a human decision.
+
+## Project Documentation
 
 - [MVP status and next steps](docs/project-status.md)
 - [Game concept and scope](docs/ideas/punk-man-escape-riot.md)
 - [Technical stack decision](docs/technical/stack.md)
+- [License notes](LICENSE-ART.md)
+
+## Hosting
+
+The site is a static Astro build deployed through Vercel. The project uses pnpm and commits its lockfile so local and hosted installs use the same dependency resolution.
+
+## Licensing
+
+The source code is licensed under the [MIT License](LICENSE). Original art, audio, and documentation are licensed under [CC BY 4.0](LICENSE-ART.md), unless a file says otherwise. Third-party assets and trademarks are excluded.
