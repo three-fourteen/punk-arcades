@@ -1,0 +1,30 @@
+---
+import '../styles/global.css';
+interface Props { title: string; description?: string; }
+const {title, description = 'A small arcade for big trouble. Play Punk-man: Escape Riot, a free neon maze escape game.'} = Astro.props;
+const path = Astro.url.pathname;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#10110e" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title} — PUNK ARCADE</title>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="site-header wrap">
+      <a class="brand" href="/" aria-label="Punk Arcade home"><span class="brand-mark" aria-hidden="true">↯</span>PUNK ARCADE</a>
+      <nav class="mono" aria-label="Main navigation">
+        <a href="/" aria-current={path === '/' ? 'page' : undefined}>The arcade</a>
+        <a href="/credits" aria-current={path.startsWith('/credits') ? 'page' : undefined}>Credits</a>
+        <span class="nav-status"><span class="dot"></span> Independent & online</span>
+      </nav>
+    </header>
+    <main id="main"><slot /></main>
+    <footer class="site-footer wrap mono"><span>© 2026 Punk Arcade · Made to be played.</span><span>No coins. No accounts. Just trouble. <a href="/credits" aria-label="View credits">↗</a></span></footer>
+  </body>
+</html>

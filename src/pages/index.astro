@@ -1,0 +1,30 @@
+---
+import Site from '../layouts/Site.astro';
+import MazePoster from '../components/MazePoster.astro';
+---
+<Site title="Small games. Big trouble.">
+  <section class="hero wrap">
+    <div class="hero-copy">
+      <div class="eyebrow mono"><span class="dot"></span> Browser games from the underground</div>
+      <h1>SMALL GAMES.<br/><span>BIG TROUBLE.</span></h1>
+      <p>A little rebellion for your browser.<br/>Instant arcade games. Built independent.<br/>Played loud.</p>
+      <a class="button" href="/games/punk-man">Enter the arcade <span aria-hidden="true">↗</span></a>
+      <div class="hero-note mono">Free to play <span>×</span> No download required</div>
+    </div>
+    <a href="/games/punk-man" class="poster" aria-label="Play Punk-man: Escape Riot">
+      <div class="poster-top mono"><span>Unauthorized entertainment</span><span>PM—001</span></div>
+      <div class="poster-art"><MazePoster/><span class="poster-sticker">MAKE<br/>SOME<br/>NOISE.</span></div>
+      <div class="poster-title">PUNK—MAN<span>ESCAPE RIOT</span></div>
+      <div class="poster-bottom mono"><span>Break in. Charge up. Get out.</span><span>↗</span></div>
+    </a>
+  </section>
+  <div class="ticker mono" aria-hidden="true"><span>NO COINS REQUIRED</span> ✳ <span>QUESTION AUTHORITY</span> ✳ <span>ONE MORE RUN</span> ✳ <span>NO COINS REQUIRED</span> ✳ <span>QUESTION AUTHORITY</span> ✳ <span>ONE MORE RUN</span></div>
+  <section class="catalogue wrap" id="games">
+    <div class="section-heading"><h2>THE LINEUP<span class="mono"> / 001</span></h2><span class="mono muted">Hand-built. Browser-ready.</span></div>
+    <a href="/games/punk-man" class="game-row"><span class="mono muted">01</span><div><div class="game-name">Punk-man: Escape Riot <span class="badge mono">Playable MVP</span></div><p class="muted">Raid a corporate maze. Steal the power. Outrun the lockdown.</p></div><span class="mono genre">Maze escape / Solo</span><span class="row-arrow" aria-label="Play">↗</span></a>
+    <div class="arcade-note"><span class="mono">ONE GAME. ZERO RULES.*</span><p class="muted">*Okay, a few rules. Collect charges. Don’t get caught. Escape.<br/>More experiments when we have something worth playing.</p></div>
+  </section>
+</Site>
+<style>
+.hero{display:grid;grid-template-columns:1.05fr 1fr;gap:72px;align-items:center;padding-top:64px;padding-bottom:72px}.hero-copy .eyebrow{margin-bottom:32px}h1{font-size:clamp(48px,5.4vw,84px);font-weight:950;letter-spacing:-.075em;line-height:.98;margin-bottom:28px}h1 span{color:var(--acid)}.hero-copy p{font-size:17px;color:var(--muted);margin-bottom:30px}.hero-note{font-size:10px;color:var(--muted);margin-top:24px}.hero-note span{padding:0 12px;color:var(--acid)}.poster{border:1px solid #62664c;background:#24291b;transform:rotate(2deg);position:relative;box-shadow:12px 12px 0 #090a08;transition:transform .2s}.poster:hover{transform:rotate(0)}.poster-top,.poster-bottom{display:flex;justify-content:space-between;padding:14px 18px;font-size:9px;color:var(--acid)}.poster-art{height:280px;overflow:hidden;position:relative;border-top:1px solid #515d32;border-bottom:1px solid #515d32}.poster-art svg{width:100%;height:auto;transform:translateY(-40px)}.poster-sticker{position:absolute;right:28px;bottom:20px;transform:rotate(-10deg);background:var(--acid);color:var(--ink);font-weight:950;line-height:.85;font-size:29px;padding:18px;box-shadow:5px 5px #10110e}.poster-title{padding:22px 18px 14px;color:var(--acid);font-size:clamp(42px,5vw,76px);font-weight:950;letter-spacing:-.065em;line-height:.85}.poster-title span{display:block;color:var(--paper);font-size:19px;letter-spacing:.5em;margin-top:13px}.poster-bottom{border-top:1px solid #515d32;margin-top:14px}.ticker{border-top:1px solid var(--line);border-bottom:1px solid var(--line);display:flex;white-space:nowrap;overflow:hidden;gap:40px;padding:20px 0;color:var(--acid);font-size:12px}.ticker span{color:var(--muted)}.catalogue{padding-top:48px}.section-heading{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}h2{font-size:26px;letter-spacing:-1px;margin:0}h2 span{color:var(--muted);margin-left:16px}.game-row{display:flex;align-items:center;gap:30px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:28px 0}.game-row:hover .game-name{color:var(--acid)}.game-name{font-size:23px;font-weight:700;letter-spacing:-.6px;display:flex;gap:16px;align-items:center}.badge{font-size:9px;color:var(--acid);border:1px solid #515b31;padding:6px 8px;letter-spacing:.06em}.game-row p{margin:8px 0 0;font-size:13px}.genre{margin-left:auto;color:var(--muted)}.row-arrow{font-size:28px;color:var(--acid);padding:12px}.arcade-note{padding-top:40px;display:flex;justify-content:space-between}.arcade-note p{font-size:12px;margin:0}@media(min-width:1500px){.poster-art{height:330px}}@media(max-width:1000px){.hero{gap:36px}h1{font-size:55px}.game-name{flex-wrap:wrap;gap:8px}.genre{display:none}}@media(max-width:700px){.hero{grid-template-columns:1fr;gap:48px;padding-top:40px;padding-bottom:48px}h1{font-size:clamp(42px,10vw,70px)}.hero-copy .eyebrow{font-size:9px}.poster{max-width:500px;width:calc(100% - 10px);margin:auto}.poster-title{font-size:58px}.poster-art{height:240px}.section-heading>span{display:none}.game-row{gap:16px}.game-name{font-size:20px}.arcade-note{display:block}.arcade-note p{margin-top:16px}.game-row p{font-size:12px}.poster-title span{font-size:16px}}
+</style>
