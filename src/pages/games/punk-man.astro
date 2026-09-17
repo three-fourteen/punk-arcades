@@ -42,6 +42,11 @@ import Site from '../../layouts/Site.astro';
 :global(body.game-active .site-header) :global(.brand){font-size:13px;gap:8px}
 :global(body.game-active .site-header) :global(.brand-mark){width:22px;height:22px;font-size:17px}
 :global(body.game-active .site-header) :global(nav){gap:12px;font-size:9px}
+.cabinet{display:flex;flex-direction:column}
+.touch-controls{order:1}
+.game-toolbar{order:2;min-height:auto;padding:8px 14px;gap:12px}
+.game-toolbar>span{font-size:8px}
+.game-toolbar button{padding:6px 10px;min-height:30px;font-size:9px}
 }
 @media(pointer:coarse) and (max-height:500px){.arena{width:auto;height:min(36vh,240px);margin:0 auto}.hud{padding:6px 10px}.hud strong{font-size:14px}.hud small{font-size:10px}.game-toolbar{min-height:auto;padding:4px 10px}.game-toolbar button{padding:6px;min-height:28px}.touch-controls{padding:8px 14px}.stick{width:72px;height:72px}.touch-actions{gap:10px}.touch-actions button{width:44px;height:44px;font-size:16px}.touch-actions .touch-fire{width:54px;height:54px;font-size:20px}}
 </style>
