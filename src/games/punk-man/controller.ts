@@ -1,5 +1,6 @@
 import type { GameHandle } from './game';
 import type { Run, Weapon } from './model';
+import { WEAPON_NAMES } from './model';
 import type { Direction } from './map';
 const element = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const arena = element('arena'), shell = element('game-shell'), overlay = element('overlay');
@@ -18,12 +19,19 @@ function render(run: Run) {
   text('progress-label', `${run.collected} / 30`);
   element<HTMLProgressElement>('progress').value = Math.min(30, run.collected);
   text('jaw-label', run.jaw > 0 ? `JAW ONLINE · ${Math.ceil(run.jaw / 1000)}s` : 'The robotic jaw');
-  text('ammo-label', `${run.ammo[run.selected]} ${run.ammo[run.selected] === 1 ? 'shot' : 'shots'}`);
+  const ammoWord = (count: number) => `${count} ${count === 1 ? 'shot' : 'shots'}`;
+  text('ammo-label', ammoWord(run.ammo[run.selected]));
   for (const weapon of ['pulse', 'bolt', 'shove'] as Weapon[]) {
     text(`ammo-${weapon}`, String(run.ammo[weapon]));
     const button = shell.querySelector<HTMLButtonElement>(`[data-weapon="${weapon}"]`)!;
     button.classList.toggle('selected', weapon === run.selected); button.setAttribute('aria-pressed', String(weapon === run.selected));
   }
+  const weaponIcon = { pulse: '◎', bolt: 'ϟ', shove: '»' }[run.selected];
+  const weaponShortName = { pulse: 'EMP', bolt: 'BOLT', shove: 'RAM' }[run.selected];
+  text('touch-weapon-icon', weaponIcon);
+  text('touch-weapon-name', weaponShortName);
+  text('touch-weapon-ammo', String(run.ammo[run.selected]));
+  element('touch-weapon').setAttribute('aria-label', `Selected weapon: ${WEAPON_NAMES[run.selected]}, ${ammoWord(run.ammo[run.selected])}`);
   if (previousMessage !== run.message) { text('live-message', run.message); previousMessage = run.message; }
   pause.disabled = !['playing', 'paused'].includes(run.phase);
   pause.setAttribute('aria-label', run.phase === 'paused' ? 'Resume game' : 'Pause game');
