@@ -8,6 +8,7 @@ let game: GameHandle | undefined, currentPhase = 'ready', previousMessage = '', 
 const text = (id: string, value: string) => { const node = element(id); if (node.textContent !== value) node.textContent = value; };
 function render(run: Run) {
   currentPhase = run.phase;
+  document.body.classList.toggle('game-active', run.phase !== 'ready');
   text('score', String(run.score).padStart(6, '0'));
   text('charges', String(run.collected).padStart(2, '0'));
   text('health', '▰'.repeat(run.health) + '▱'.repeat(3 - run.health));
@@ -61,16 +62,21 @@ window.addEventListener('blur', autoPause);
 document.addEventListener('visibilitychange', () => { if (document.hidden) autoPause(); });
 element('touch-fire').addEventListener('pointerdown', event => { event.preventDefault(); game?.fire(); });
 element('touch-switch').addEventListener('click', () => game?.cycle());
-const stick = element('stick');
+const stick = element('stick'), knob = stick.querySelector<HTMLElement>('.stick-knob')!;
 let activePointer: number | undefined;
+const KNOB_RANGE = 30;
 const steer = (event: PointerEvent) => {
   const bounds = stick.getBoundingClientRect(), dx = event.clientX - bounds.left - bounds.width / 2, dy = event.clientY - bounds.top - bounds.height / 2;
-  if (Math.hypot(dx, dy) < 10) return;
+  const distance = Math.hypot(dx, dy) || 1;
+  const reach = Math.min(distance, KNOB_RANGE) / distance;
+  knob.style.transform = `translate(${dx * reach}px, ${dy * reach}px)`;
+  if (distance < 10) return;
   game?.steer(Math.abs(dx) > Math.abs(dy) ? dx > 0 ? 'right' : 'left' : dy > 0 ? 'down' : 'up');
 };
-stick.addEventListener('pointerdown', event => { if (activePointer !== undefined) return; event.preventDefault(); activePointer = event.pointerId; stick.setPointerCapture(event.pointerId); steer(event); arena.focus({ preventScroll: true }); });
+const resetKnob = () => { activePointer = undefined; knob.style.transform = ''; stick.classList.remove('active'); };
+stick.addEventListener('pointerdown', event => { if (activePointer !== undefined) return; event.preventDefault(); activePointer = event.pointerId; stick.setPointerCapture(event.pointerId); stick.classList.add('active'); steer(event); arena.focus({ preventScroll: true }); });
 stick.addEventListener('pointermove', event => { if (event.pointerId === activePointer) steer(event); });
-for (const name of ['pointerup', 'pointercancel', 'lostpointercapture']) stick.addEventListener(name, () => { activePointer = undefined; });
+for (const name of ['pointerup', 'pointercancel', 'lostpointercapture']) stick.addEventListener(name, resetKnob);
 // Preserve keyboard activation on the visible touch action buttons.
 element('touch-fire').addEventListener('click', event => { if (event.detail === 0) game?.fire(); });
 const loadTimeout = window.setTimeout(() => { text('overlay-copy', 'Still loading. If the maze does not appear, reload this page to try again.'); }, 15000);
