@@ -27,3 +27,6 @@ pnpm-debug.log*
 playwright-report/
 test-results/
 .pnpm-store/
+
+# local Claude Code settings
+.claude/settings.local.json

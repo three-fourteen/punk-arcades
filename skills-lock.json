@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "mobile-gameplay-ux-review": {
+      "source": "three-fourteen/mobile-gameplay-ux-review",
+      "sourceType": "github",
+      "skillPath": "skills/mobile-gameplay-ux-review/SKILL.md",
+      "computedHash": "850376ab71118405b20faf06f74953b93c18130d7815d5080f3e3b193555ef36"
+    }
+  }
+}

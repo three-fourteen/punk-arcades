@@ -1,0 +1,4 @@
+interface:
+  display_name: "Mobile Gameplay UX Review"
+  short_description: "Review touch controls and mobile gameplay UX"
+  default_prompt: "Use $mobile-gameplay-ux-review to playtest this web game on mobile and produce mobile-gameplay-review.md with prioritized findings and acceptance criteria."
