@@ -1,5 +1,15 @@
 # Mobile Gameplay Review
 
+## Status (updated 2026-09-17)
+
+Findings 1 and 2 are **fixed** on `main`:
+
+- Finding 1 (Critical — touch controls off-screen): fixed in `ed9fd25`, `1681c13`, `b944df8`. The header collapses to a compact bar (logo + nav still reachable) while a run is active on touch devices, and short/landscape viewports get a tighter layout budget, so the joystick and action buttons now fit on-screen without scrolling. Re-verified with Playwright on iPhone 14 (portrait/landscape) and an iPhone SE-class viewport.
+- Finding 2 (Medium — no joystick feedback): fixed in `ed9fd25`. The knob now tracks touch position (clamped radius, smooth transition) and highlights while held.
+- Finding 3 (Low — arena has no defined touch behavior): **not yet addressed**; still open.
+
+The findings below are kept as-written (the original audit trail); each finding's own "Recommended direction" and "Acceptance criteria" reflect what was requested at the time, not necessarily the exact implementation chosen.
+
 ## Test environment
 
 - Application: Punk-man: Escape Riot (`/games/punk-man`), served by `astro dev` at `http://localhost:4321`

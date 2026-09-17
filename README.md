@@ -135,6 +135,7 @@ The agent is encouraged to challenge scope and identify risks, but product direc
 - [MVP status and next steps](docs/project-status.md)
 - [Game concept and scope](docs/ideas/punk-man-escape-riot.md)
 - [Technical stack decision](docs/technical/stack.md)
+- [Mobile gameplay UX review](docs/reviews/mobile-gameplay-review.md)
 - [License notes](LICENSE-ART.md)
 
 ## Hosting
