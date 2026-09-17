@@ -76,6 +76,12 @@ pnpm dev
 
 Development follows the repository instructions and runs in background mode. Use the printed Astro URL, normally `http://localhost:4321`.
 
+## Optional Ko-fi link
+
+Copy `.env.example` to `.env` and set `KOFI_URL` to your Ko-fi profile URL to show a support section on `/credits`. Leave it unset or blank to hide the entire section. `.env` is ignored by Git so forks can configure their own link.
+
+For deployment, set `KOFI_URL` in your hosting provider's build environment. The link is included in the generated public HTML at build time; rebuild after changing it. Restart the development server after changing `.env`.
+
 ## Commands
 
 | Command | Description |
