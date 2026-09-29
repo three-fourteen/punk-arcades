@@ -1,15 +1,19 @@
-import { MAZE, START, EXIT, REQUIRED_CHARGES, ALARM_MS, DIRECTIONS, add, distance, key, pathTo, walkable } from './map.ts';
+import { DIRECTIONS, add, distance, key, pathTo, walkable } from './map.ts';
 import type { Direction, Point } from './map.ts';
+import { DEFAULT_LEVEL } from './default-level.ts';
+import { validateLevel } from './level.ts';
+import type { LevelDefinition } from './level.ts';
 
 export type Weapon = 'pulse' | 'bolt' | 'shove';
 export type Phase = 'ready' | 'playing' | 'paused' | 'won' | 'lost';
-export type Drone = { kind: 'chaser' | 'ambusher' | 'sentry'; position: Point; home: Point; stunned: number; removed: number; clock: number; patrol: number };
+export type Drone = { kind: 'chaser' | 'ambusher' | 'sentry'; position: Point; home: Point; stunned: number; removed: number; clock: number; patrol: number; waypoints: Point[] };
 export type GameEvent = 'charge' | 'pickup' | 'fire' | 'bite' | 'hit' | 'alarm' | 'won' | 'lost';
 export const WEAPONS: Weapon[] = ['pulse', 'bolt', 'shove'];
 export const WEAPON_NAMES = { pulse: 'EMP pulse', bolt: 'Scrap bolt', shove: 'Ram blast' };
 export class Run {
   phase: Phase = 'ready';
-  player = { ...START };
+  readonly level: LevelDefinition;
+  player: Point;
   direction: Direction = 'right';
   requested: Direction | null = null;
   charges = new Set<string>();
@@ -18,7 +22,7 @@ export class Run {
   score = 0;
   health = 3;
   elapsed = 0;
-  alarmRemaining = ALARM_MS;
+  alarmRemaining: number;
   alarm = false;
   jaw = 0;
   invulnerable = 0;
@@ -26,26 +30,22 @@ export class Run {
   ammo = { pulse: 1, bolt: 0, shove: 0 };
   drones: Drone[];
   events: GameEvent[] = [];
-  message = 'Find 30 charges. Make your own way out.';
+  message: string;
   private playerClock = 0;
-  constructor() {
-    this.drones = ([
-      { kind: 'chaser', home: { x: 19, y: 9 } },
-      { kind: 'ambusher', home: { x: 9, y: 7 } },
-      { kind: 'sentry', home: { x: 15, y: 15 } },
-    ] satisfies Pick<Drone, 'kind' | 'home'>[]).map(d => ({ ...d, position: { ...d.home }, stunned: 0, removed: 0, clock: 0, patrol: 0 }));
-    this.pickups.set('3,3', 'bolt');
-    this.pickups.set('1,9', 'pulse');
-    this.pickups.set('9,5', 'shove');
-    this.pickups.set('17,5', 'bolt');
-    this.pickups.set('7,15', 'shove');
-    this.pickups.set('15,11', 'pulse');
-    this.pickups.set('11,13', 'jaw');
-    MAZE.forEach((row, y) => [...row].forEach((cell, x) => {
-      const p = { x, y };
-      if (cell === '.' && (x + y) % 2 === 0 && !this.pickups.has(key(p))) this.charges.add(key(p));
-    }));
+  constructor(level: LevelDefinition = DEFAULT_LEVEL) {
+    const result = validateLevel(level);
+    if (!result.ok) throw new Error(result.errors.map(e => `${e.path}: ${e.message}`).join('\n'));
+    this.level = result.level;
+    const freeze = (value: object) => { Object.values(value).forEach(v => { if (v && typeof v === 'object') freeze(v); }); Object.freeze(value); };
+    freeze(this.level);
+    this.player = { ...this.level.start };
+    this.alarmRemaining = this.level.alarmMs;
+    this.message = `Find ${this.level.requiredCharges} charges. Make your own way out.`;
+    this.drones = this.level.drones.map(d => ({ kind: d.kind, home: { ...d.home }, position: { ...d.home }, waypoints: (d.patrol ?? [d.home]).map(p => ({ ...p })), stunned: 0, removed: 0, clock: 0, patrol: 0 }));
+    this.pickups = new Map(this.level.pickups.map(p => [key(p.position), p.kind]));
+    this.charges = new Set(this.level.charges.map(key));
   }
+  private walkable(p: Point) { return walkable(p, this.level.maze); }
   start() { if (this.phase === 'ready') this.phase = 'playing'; }
   pause() { if (this.phase === 'playing') this.phase = 'paused'; else if (this.phase === 'paused') this.phase = 'playing'; }
   steer(direction: Direction) { this.requested = direction; }
@@ -60,13 +60,13 @@ export class Run {
     const forward = DIRECTIONS[this.direction];
     const ray: string[] = [];
     let p = this.player;
-    for (let i = 0; i < 5; i++) { p = add(p, forward); if (!walkable(p)) break; ray.push(key(p)); }
+    for (let i = 0; i < 5; i++) { p = add(p, forward); if (!this.walkable(p)) break; ray.push(key(p)); }
     for (const drone of this.drones) {
       if (drone.removed > 0) continue;
       if (this.selected === 'pulse' && distance(drone.position, this.player) <= 3) drone.stunned = 3500;
       if (this.selected === 'bolt' && ray.includes(key(drone.position))) { drone.removed = 6500; this.score += 150; }
       if (this.selected === 'shove' && ray.slice(0, 2).includes(key(drone.position))) {
-        for (let i = 0; i < 3; i++) { const next = add(drone.position, forward); if (walkable(next)) drone.position = next; else break; }
+        for (let i = 0; i < 3; i++) { const next = add(drone.position, forward); if (this.walkable(next)) drone.position = next; else break; }
         drone.stunned = 2500;
       }
     }
@@ -88,10 +88,10 @@ export class Run {
     this.playerClock += dt;
     if (this.playerClock >= 135) {
       this.playerClock -= 135;
-      if (this.requested && walkable(add(this.player, DIRECTIONS[this.requested]))) this.direction = this.requested;
+      if (this.requested && this.walkable(add(this.player, DIRECTIONS[this.requested]))) this.direction = this.requested;
       if (this.requested) {
         const next = add(this.player, DIRECTIONS[this.direction]);
-        if (walkable(next)) this.player = next;
+        if (this.walkable(next)) this.player = next;
       }
       this.collect();
       this.collide();
@@ -117,29 +117,29 @@ export class Run {
       this.events.push('pickup');
     }
     this.checkAlarm();
-    if (tile === key(EXIT)) {
+    if (tile === key(this.level.exit)) {
       if (this.alarm) this.finish(true, 'You broke the system. Now disappear.');
-      else this.message = `Exit sealed. Find ${REQUIRED_CHARGES - this.collected} more charges.`;
+      else this.message = `Exit sealed. Find ${this.level.requiredCharges - this.collected} more charges.`;
     }
   }
   private checkAlarm() {
-    if (this.collected >= REQUIRED_CHARGES && !this.alarm) {
+    if (this.collected >= this.level.requiredCharges && !this.alarm) {
       this.alarm = true;
-      this.message = 'ALARM! Exit unlocked. Reach the top-right gate in 45 seconds.';
+      this.message = `ALARM! Exit unlocked. Reach the gate in ${this.level.alarmMs / 1000} seconds.`;
       this.events.push('alarm');
     }
   }
   private moveDrone(drone: Drone) {
     let target = this.player;
     if (drone.kind === 'ambusher') {
-      for (let i = 0; i < 4; i++) { const ahead = add(target, DIRECTIONS[this.direction]); if (walkable(ahead)) target = ahead; else break; }
+      for (let i = 0; i < 4; i++) { const ahead = add(target, DIRECTIONS[this.direction]); if (this.walkable(ahead)) target = ahead; else break; }
     }
     if (drone.kind === 'sentry' && distance(this.player, drone.home) > 5) {
-      const patrol = [{ x: 15, y: 15 }, { x: 19, y: 15 }, { x: 19, y: 17 }, { x: 11, y: 17 }];
+      const patrol = drone.waypoints;
       target = patrol[drone.patrol];
       if (key(drone.position) === key(target)) { drone.patrol = (drone.patrol + 1) % patrol.length; target = patrol[drone.patrol]; }
     }
-    const next = pathTo(drone.position, target)[0];
+    const next = pathTo(drone.position, target, this.level.maze)[0];
     if (next) drone.position = next;
   }
   private collide() {

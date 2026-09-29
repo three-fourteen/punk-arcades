@@ -1,0 +1,40 @@
+<section class="level-entry" aria-label="Custom levels">
+  <p class="mono">Playing: <strong id="level-active">Escape Riot</strong></p>
+  <div class="lab-actions"><button id="level-load" type="button">Load level</button><button id="level-agent" type="button">Create with an agent</button><button id="level-export-active" type="button">Download current level</button></div>
+  <input id="level-file" type="file" accept=".json,application/json" hidden />
+  <details id="level-lab">
+    <summary>Level Lab · Preview and edit</summary>
+    <p>Load a JSON level, or use the built-in maze as a starting point. Levels stay in this tab; download yours to keep it.</p>
+    <div class="lab-actions"><button id="level-template" type="button">Use built-in example</button><button id="level-edit" type="button">Edit JSON / try again</button></div>
+    <details id="level-agent-panel">
+      <summary>Create with an agent</summary>
+      <p id="level-agent-status" role="status">Checking browser agent support…</p>
+      <label for="level-brief">Describe your level</label>
+      <textarea id="level-brief" rows="3" maxlength="2000" placeholder="A compact maze with two branching routes and a dangerous exit path."></textarea>
+      <button id="level-prompt" type="button">Prepare agent prompt</button>
+      <label for="level-agent-prompt">Copy this prompt into your browser agent</label>
+      <textarea id="level-agent-prompt" rows="4" readonly placeholder="Your prompt will appear here. This page does not include a chat agent."></textarea>
+    </details>
+    <details id="level-json-editor">
+      <summary>Level JSON</summary>
+      <p>Version 1 uses # for walls and . for floor. Coordinates start at zero. Charges, pickups, start, and exit use distinct floor tiles. Edit the example below; feedback updates as you type.</p>
+      <label for="level-source">Level definition</label>
+      <textarea id="level-source" rows="14" spellcheck="false" aria-describedby="level-feedback"></textarea>
+      <button id="level-validate" type="button">Validate and preview</button>
+    </details>
+    <p id="level-feedback" role="status" aria-live="polite"></p>
+    <div class="lab-preview"><canvas id="level-preview" role="img" aria-label="Level preview: white player start, lime exit and charges, cyan pickups, red drones"></canvas><p id="level-summary"></p></div>
+    <div class="lab-actions"><button id="level-play" type="button" disabled>Play level</button><button id="level-download" type="button" disabled>Download JSON</button></div>
+    <p class="lab-note">Play level starts a fresh run. Validation checks the layout and objective; playtesting determines difficulty.</p>
+  </details>
+</section>
+<style>
+  .level-entry{border:1px solid var(--line);padding:16px;margin-bottom:24px;background:#151c11;font-size:12px;line-height:1.6}
+  .level-entry>p{margin:0 0 10px}.lab-actions{display:flex;flex-wrap:wrap;gap:8px}
+  button{font:inherit;color:var(--paper);background:#242d17;border:1px solid #75883a;padding:10px 14px;min-height:44px;cursor:pointer}
+  button:disabled{opacity:.45;cursor:default}#level-play{background:var(--acid);color:var(--ink);font-weight:bold}
+  details{margin-top:14px}summary{cursor:pointer;color:var(--acid);padding:8px 0}
+  label{display:block;margin-top:12px}textarea{display:block;width:100%;max-width:100%;padding:10px;margin:6px 0 12px;background:#0c1109;color:var(--paper);border:1px solid #657d30;font:12px/1.5 monospace;resize:vertical;box-sizing:border-box}
+  #level-feedback{white-space:pre-line;color:var(--acid);overflow-wrap:anywhere}.lab-preview{display:flex;align-items:center;gap:20px;flex-wrap:wrap;margin:16px 0}.lab-preview canvas{max-width:100%;height:auto;border:1px solid var(--line)}.lab-preview p{flex:1;min-width:160px;overflow-wrap:anywhere}.lab-note{color:var(--muted);margin-bottom:0}
+  @media(pointer:coarse){:global(body.game-playing) .level-entry:has(#level-lab:not([open])){display:none}}
+</style>

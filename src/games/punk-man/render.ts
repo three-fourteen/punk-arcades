@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { MAZE, EXIT } from './map';
+import type { LevelDefinition } from './level';
 import type { Run } from './model';
 import { drawPunk } from './punk';
 export const TILE = 32;
@@ -7,9 +7,10 @@ export const WIDTH = 672;
 export const HEIGHT = 608;
 const horizontalFacing = new WeakMap<Run, number>();
 const center = (n: number) => n * TILE + TILE / 2;
-export function drawMaze(g: Phaser.GameObjects.Graphics) {
-  g.fillStyle(0x10170e); g.fillRect(0, 0, WIDTH, HEIGHT);
-  MAZE.forEach((row, y) => [...row].forEach((cell, x) => {
+export function drawMaze(g: Phaser.GameObjects.Graphics, level: LevelDefinition) {
+  g.clear();
+  g.fillStyle(0x10170e); g.fillRect(0, 0, level.maze[0].length * TILE, level.maze.length * TILE);
+  level.maze.forEach((row, y) => [...row].forEach((cell, x) => {
     const px = x * TILE, py = y * TILE;
     if (cell === '#') {
       g.fillStyle(0x202b19); g.fillRoundedRect(px + 3, py + 3, 26, 26, 3);
@@ -41,7 +42,7 @@ export function drawActors(g: Phaser.GameObjects.Graphics, run: Run, time: numbe
     if (pickup === 'shove') { g.lineBetween(px - 5, py - 5, px, py); g.lineBetween(px, py, px - 5, py + 5); g.lineBetween(px + 1, py - 5, px + 6, py); g.lineBetween(px + 6, py, px + 1, py + 5); }
     if (pickup === 'jaw') { g.strokeRect(px - 6, py - 4, 12, 9); for (let i = -3; i <= 3; i += 3) g.lineBetween(px + i, py - 4, px + i, py + 2); }
   }
-  const ex = center(EXIT.x), ey = center(EXIT.y);
+  const ex = center(run.level.exit.x), ey = center(run.level.exit.y);
   g.fillStyle(run.alarm ? 0xd7f542 : 0x465039, run.alarm ? pulse : 1); g.fillRoundedRect(ex - 13, ey - 13, 26, 26, 2);
   g.lineStyle(2, run.alarm ? 0x10170e : 0xb0b9a2); g.lineBetween(ex - 7, ey, ex + 7, ey); g.lineBetween(ex + 2, ey - 5, ex + 7, ey); g.lineBetween(ex + 2, ey + 5, ex + 7, ey);
   for (const drone of run.drones) {

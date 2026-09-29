@@ -36,8 +36,19 @@ An arcade maze escape game with a grimy neon cyberpunk look.
 - Find the rare robotic-jaw pickup to consume a nearby ghost-drone.
 - Trigger the final alarm and reach the exit before lockdown.
 - Play with keyboard controls on desktop or a virtual stick and action buttons on touch devices.
+- Import, edit, preview, play, and share custom JSON levels with Level Lab.
 
 The ghost-drones keep the rounded floating silhouette and directional eyes of classic maze-game ghosts, but reinterpret them as damaged corporate surveillance machines.
+
+### Level Lab
+
+On `/games/punk-man`, choose **Load level** to import a JSON file. Review the maze preview and validation feedback, then choose **Play level**. Use **Edit JSON / try again** to adjust a draft or **Use built-in example** to start from the original maze.
+
+**Download JSON** saves the draft; **Download current level** saves the level being played. Levels stay in the current tab, so download your work before refreshing or leaving. Files are processed locally with no accounts or server storage.
+
+**Create with an agent** prepares a prompt for your own compatible browser agent. WebMCP tools let it create, validate, preview, and export a draft; the player chooses when to play. There is no built-in chat model. If WebMCP is unavailable, give an agent the downloaded example and import its resulting JSON file. Live agent compatibility remains unverified; automated checks use a mock of the browser API.
+
+See the [level format and agent workflow](docs/technical/level-lab.md) for a complete example, supported fields, limits, and tool names.
 
 ## Roadmap
 
@@ -50,6 +61,7 @@ The ghost-drones keep the rounded floating silhouette and directional eyes of cl
 
 ### Agent experiments
 
+- Playtest the Level Lab workflow with a real WebMCP-compatible browser agent.
 - Rebuild a small feature with different coding agents and compare the results.
 - Try alternative enemy behaviors, weapon interactions, and visual treatments.
 - Document which approaches were fast, clear, robust, or difficult to maintain.
@@ -90,7 +102,8 @@ For deployment, set `KOFI_URL` in your hosting provider's build environment. The
 | `pnpm dev:status` | Check the background development server. |
 | `pnpm dev:logs` | Read development server logs. |
 | `pnpm dev:stop` | Stop the background development server. |
-| `pnpm verify` | Run type checking, game-rule tests, and the production build. |
+| `pnpm test` | Run game-rule, level validation, and agent-tool unit tests. |
+| `pnpm verify` | Run type checking, unit tests, and the production build. |
 | `pnpm test:browser` | Run the real-browser regression suite against a running server. |
 | `pnpm build` | Create the static production build in `dist/`. |
 | `pnpm preview` | Preview the production build locally. |
@@ -98,7 +111,7 @@ For deployment, set `KOFI_URL` in your hosting provider's build environment. The
 ## Routes
 
 - `/` — arcade catalogue and Punk-man poster.
-- `/games/punk-man` — playable game.
+- `/games/punk-man` — playable game and Level Lab.
 - `/credits` — art, audio, technology, and playability notes.
 
 ## Architecture
@@ -117,6 +130,8 @@ src/
 
 The current game separates deterministic rules from rendering where practical, which makes game behavior easier to test and gives agents a smaller surface to modify safely.
 
+The built-in maze and imported levels use the same versioned level definition. Validation is shared by file import, JSON editing, and WebMCP. Each run copies its selected definition; restarting preserves that level while resetting gameplay state.
+
 ## Agent Collaboration
 
 Agents are treated as contributors to a human-led product process. Before changing the project, an agent should read `AGENTS.md`, the relevant product or technical documents, and the current implementation.
@@ -132,9 +147,10 @@ The agent is encouraged to challenge scope and identify risks, but product direc
 
 ## Project Documentation
 
-- [MVP status and next steps](docs/project-status.md)
+- [Project status and next steps](docs/project-status.md)
 - [Game concept and scope](docs/ideas/punk-man-escape-riot.md)
 - [Technical stack decision](docs/technical/stack.md)
+- [Level Lab: JSON format and WebMCP workflow](docs/technical/level-lab.md)
 - [Mobile gameplay UX review](docs/reviews/mobile-gameplay-review.md)
 - [License notes](LICENSE-ART.md)
 

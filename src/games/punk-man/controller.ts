@@ -2,22 +2,34 @@ import type { GameHandle } from './game';
 import type { Run, Weapon } from './model';
 import { WEAPON_NAMES } from './model';
 import type { Direction } from './map';
+import { mountLevelLab } from './level-lab';
 const element = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const arena = element('arena'), shell = element('game-shell'), overlay = element('overlay');
 const start = element<HTMLButtonElement>('start'), pause = element<HTMLButtonElement>('pause'), sound = element<HTMLButtonElement>('sound');
 let game: GameHandle | undefined, currentPhase = 'ready', previousMessage = '', previousOverlay = '', muted = false;
 const text = (id: string, value: string) => { const node = element(id); if (node.textContent !== value) node.textContent = value; };
 function render(run: Run) {
+  lab.ready();
+  arena.style.aspectRatio = `${run.level.maze[0].length} / ${run.level.maze.length}`;
+  // Keep menus readable on shallow maps and avoid page-height arenas on tall maps.
+  arena.style.minHeight = run.level.maze[0].length / run.level.maze.length > 2 ? 'min(280px, 70vh)' : '';
+  arena.style.maxHeight = run.level.maze.length / run.level.maze[0].length > 2 ? '70vh' : '';
   currentPhase = run.phase;
   document.body.classList.toggle('game-active', run.phase !== 'ready');
+  document.body.classList.toggle('game-playing', run.phase === 'playing');
   text('score', String(run.score).padStart(6, '0'));
   text('charges', String(run.collected).padStart(2, '0'));
   text('health', '▰'.repeat(run.health) + '▱'.repeat(3 - run.health));
   element('health').setAttribute('aria-label', `${run.health} of 3 integrity`);
-  text('phase-label', run.alarm ? 'Exit open ↗' : 'Exit sealed');
-  text('timer', run.alarm ? `00:${String(Math.max(0, Math.ceil(run.alarmRemaining / 1000))).padStart(2, '0')}` : '— : —');
-  text('progress-label', `${run.collected} / 30`);
-  element<HTMLProgressElement>('progress').value = Math.min(30, run.collected);
+  text('phase-label', run.alarm ? 'Exit open' : 'Exit sealed');
+  const seconds = Math.max(0, Math.ceil(run.alarmRemaining / 1000));
+  text('timer', run.alarm ? `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}` : '— : —');
+  text('progress-label', `${run.collected} / ${run.level.requiredCharges}`);
+  const denominator = element('charges').nextElementSibling;
+  if (denominator && denominator.textContent !== ` / ${run.level.requiredCharges}`) denominator.textContent = ` / ${run.level.requiredCharges}`;
+  element<HTMLProgressElement>('progress').max = run.level.requiredCharges;
+  element<HTMLProgressElement>('progress').value = Math.min(run.level.requiredCharges, run.collected);
+  text('objective', `Collect ${run.level.requiredCharges} charges to open the marked exit. The alarm gives you ${run.level.alarmMs / 1000} seconds to escape. You have three hits.`);
   text('jaw-label', run.jaw > 0 ? `JAW ONLINE · ${Math.ceil(run.jaw / 1000)}s` : 'The robotic jaw');
   const ammoWord = (count: number) => `${count} ${count === 1 ? 'shot' : 'shots'}`;
   text('ammo-label', ammoWord(run.ammo[run.selected]));
@@ -39,6 +51,7 @@ function render(run: Run) {
   overlay.hidden = run.phase === 'playing';
   if (previousOverlay !== run.phase) {
     previousOverlay = run.phase;
+    if (run.phase === 'ready') { text('overlay-kicker', run.level.name); text('overlay-title', 'START A RIOT.'); text('overlay-copy', `Steal ${run.level.requiredCharges} charges. Unlock the exit. Escape within ${run.level.alarmMs / 1000} seconds of the alarm.`); text('start', 'Start the riot ↗'); text('overlay-hint', 'WASD / Arrows to move · Space to fire'); }
     if (run.phase === 'paused') { text('overlay-kicker', 'Signal interrupted'); text('overlay-title', 'LAY LOW.'); text('overlay-copy', 'Take a breath. The riot will wait.'); text('start', 'Resume riot ↗'); }
     if (run.phase === 'won' || run.phase === 'lost') {
       text('overlay-kicker', run.phase === 'won' ? 'Corporate control: broken' : 'Signal terminated');
@@ -66,6 +79,14 @@ shell.addEventListener('keydown', event => {
   if (['1', '2', '3'].includes(key)) game?.select((['pulse', 'bolt', 'shove'] as Weapon[])[Number(key) - 1]);
 });
 const autoPause = () => { if (currentPhase === 'playing') game?.pause(); };
+const lab = mountLevelLab(level => {
+  if (!game) return false;
+  previousOverlay = '';
+  arena.style.aspectRatio = `${level.maze[0].length} / ${level.maze.length}`;
+  if (!game.load(level)) return false;
+  resetKnob(); game.start(); arena.focus({ preventScroll: true }); arena.scrollIntoView({ block: 'center' });
+  return true;
+}, autoPause);
 window.addEventListener('blur', autoPause);
 document.addEventListener('visibilitychange', () => { if (document.hidden) autoPause(); });
 element('touch-fire').addEventListener('pointerdown', event => { event.preventDefault(); game?.fire(); });
@@ -94,5 +115,5 @@ import('./game').then(({ mountGame }) => {
   clearTimeout(loadTimeout); text('overlay-title', 'SIGNAL LOST.'); text('overlay-copy', 'The game could not load. Reload the page to reconnect.'); text('start', 'Reload game'); start.disabled = false;
   start.addEventListener('click', () => location.reload(), { once: true }); console.error('Punk-man failed to load', error);
 });
-window.addEventListener('pagehide', () => { game?.destroy(); game = undefined; });
+window.addEventListener('pagehide', () => { lab.destroy(); game?.destroy(); game = undefined; });
 window.addEventListener('pageshow', event => { if (event.persisted) location.reload(); });
