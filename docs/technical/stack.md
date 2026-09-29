@@ -4,6 +4,8 @@
 
 Implemented for the Punk-man MVP on 2026-09-14. The project uses Astro 7.3.2, Phaser 4.2.1, TypeScript 6.0.3, and pnpm 10.33.3. Exact dependency resolutions are recorded in `pnpm-lock.yaml`; the package-manager version is pinned in `package.json`. See [project status](../project-status.md) for verification and remaining work.
 
+Updated 2026-09-29 for Level Lab: custom levels and WebMCP authoring run entirely in the browser and require no new runtime dependencies or backend.
+
 ## Decision
 
 Build one static Astro project, use Phaser for each game's runtime, manage dependencies with pnpm, and deploy through Vercel.
@@ -26,27 +28,38 @@ Astro owns the site: catalogue, game routes, shared layout, credits, and future 
 ```text
 Astro site
 ├── /                         Home and game catalogue
-├── /games/punk-man           Astro page with a Phaser mount point
+├── /games/punk-man           Game page with Level Lab and a Phaser mount point
 ├── /credits                  Static page
 ├── src/components/           Shared Astro layout components
-├── src/games/punk-man/       Phaser-only game code and assets
-│   ├── game.ts               Game bootstrap
-│   ├── scenes/               Menu and play scenes
-│   ├── entities/             Punk-man and ghost-drones
-│   ├── systems/              Maze, input, weapons, alarm, and scoring
-│   └── data/                 Map and balancing data
+├── src/games/punk-man/       Game rules, browser controllers, and rendering
+│   ├── game.ts               Phaser bootstrap and level switching
+│   ├── model.ts              Independent game simulation
+│   ├── map.ts                Navigation helpers and built-in maze constants
+│   ├── default-level.ts      Built-in level definition
+│   ├── level.ts              Level types, schema, validation, and serialization
+│   ├── level-lab.ts          Draft state, browser UI, and WebMCP adapter
+│   ├── controller.ts         Game HUD and input
+│   ├── render.ts             Maze and actor rendering
+│   ├── punk.ts               Player artwork
+│   └── audio.ts              Synthesized audio
 └── public/                   Favicons and static assets
 ```
 
-The MVP keeps the small runtime flat inside `src/games/punk-man/`: `map.ts`, `model.ts`, `render.ts`, `audio.ts`, `game.ts`, and `controller.ts`. The ready, paused, and end screens are accessible DOM overlays over one Phaser scene; this is a deliberate simplification of the proposed scene/entity/system folders above. Gameplay rules stay independent of Phaser and site markup.
+The runtime stays flat inside `src/games/punk-man/`. The ready, paused, and end screens are accessible DOM overlays over one Phaser scene. `src/components/LevelLab.astro` supplies the authoring interface. Gameplay rules stay independent of Phaser and site markup.
+
+## Level Data and Agent Tools
+
+Each `Run` accepts a versioned `LevelDefinition`, defaulting to the built-in maze. It validates, copies, and freezes configuration while keeping gameplay state mutable. Navigation, rendering, objectives, timers, and sentry patrols use the selected definition. Restarts reset state using the same level.
+
+File import, JSON editing, and WebMCP use shared validation and an in-memory draft. Preview and export operate on that draft; the player's Play level action selects it for a fresh run. No levels are uploaded or stored on a server. The browser adapter feature-detects WebMCP and keeps file import/export available when it cannot register tools. See [Level Lab](level-lab.md) for the schema, limits, API reference, and compatibility caveats.
 
 Each future game should be self-contained beneath `src/games/<game-id>/`. Shared site components must not contain game rules, and game code must not depend on catalogue-page UI.
 
 ## Rendering and Input
 
-Use a fixed internal game resolution and Phaser's `FIT` scale mode to preserve the arcade composition while adapting to the available viewport. Desktop input uses keyboard controls. Mobile input uses a visible virtual stick and action buttons immediately below the game canvas so fingers do not cover maze corridors.
+Use 32-pixel tiles and Phaser's `FIT` scale mode. The built-in maze has a 672 × 608 internal resolution; custom levels derive their resolution from their dimensions and update it through `setGameSize`. Arena sizing keeps menus readable for shallow maps and caps tall maps. Desktop input uses keyboard controls. Mobile input uses a visible virtual stick and action buttons immediately below the game canvas so fingers do not cover maze corridors.
 
-The MVP uses DOM keyboard events and Pointer Events for accessible controls, forwarding actions to the game model. Phaser's Scale Manager fits the fixed canvas into its parent container. Phaser also supports unified pointer input if future in-canvas controls need it. References: <https://docs.phaser.io/phaser/concepts/input> and <https://docs.phaser.io/phaser/concepts/scale-manager>.
+The game uses DOM keyboard events and Pointer Events for accessible controls, forwarding actions to the game model. Phaser's Scale Manager fits the selected level's canvas into its parent container. On touch devices, the closed Level Lab hides during active play and returns on pause or completion. References: <https://docs.phaser.io/phaser/concepts/input> and <https://docs.phaser.io/phaser/concepts/scale-manager>.
 
 ## Audio
 
@@ -72,7 +85,7 @@ The intended workflow is:
 - No React: there is no complex application UI that justifies it yet.
 - No Tailwind: the visual system is small enough to express in ordinary CSS.
 - No monorepo: one Astro project and one game do not warrant workspace management.
-- No tile-map editor: define the MVP map as versioned TypeScript or JSON data.
+- No visual tile-map editor: Level Lab supports JSON editing and agent-created drafts using the existing mechanics.
 - No analytics SDK at launch: first validate whether the game is enjoyable through direct playtesting.
 
 ## Revisit Triggers

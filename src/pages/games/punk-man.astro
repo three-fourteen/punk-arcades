@@ -1,10 +1,12 @@
 ---
 import Site from '../../layouts/Site.astro';
+import LevelLab from '../../components/LevelLab.astro';
 ---
 <Site title="Punk-man: Escape Riot" description="Collect 30 charges, improvise your way past corporate ghost-drones, and escape before lockdown. A free keyboard and touch arcade game.">
   <div class="wrap game-page">
     <div class="breadcrumb mono"><a href="/">← The arcade</a><span>Game 001 / Maze escape</span></div>
     <div class="game-heading"><div><div class="eyebrow mono">A little corporate sabotage.</div><h1>PUNK—MAN<span>ESCAPE RIOT</span></h1></div><div class="edition mono"><span class="dot"></span> First playable<br/><span class="muted">One maze. One way out.</span></div></div>
+    <LevelLab />
     <div class="game-layout" id="game-shell">
       <section class="cabinet" aria-label="Punk-man game">
         <div class="hud"><div><span class="mono muted">Score</span><strong id="score">000000</strong></div><div><span class="mono muted">Charges</span><strong><span id="charges">00</span><small> / 30</small></strong></div><div><span class="mono muted">Integrity</span><strong id="health" aria-label="3 of 3 integrity">▰▰▰</strong></div><div class="hud-exit"><span class="mono muted" id="phase-label">Exit sealed</span><strong id="timer">— : —</strong></div></div>

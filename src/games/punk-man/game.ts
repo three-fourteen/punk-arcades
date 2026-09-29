@@ -1,23 +1,25 @@
 import Phaser from 'phaser';
 import { Run } from './model';
 import { sounds } from './audio';
-import { drawMaze, drawActors, WIDTH, HEIGHT } from './render';
+import { drawMaze, drawActors, WIDTH, HEIGHT, TILE } from './render';
+import type { LevelDefinition } from './level';
 import type { Direction } from './map';
 import type { Weapon } from './model';
-export type GameHandle = { start: () => void; pause: () => void; steer: (d: Direction) => void; fire: () => void; select: (w: Weapon) => void; cycle: () => void; mute: (value: boolean) => void; destroy: () => void };
+export type GameHandle = { load: (level: LevelDefinition) => boolean; start: () => void; pause: () => void; steer: (d: Direction) => void; fire: () => void; select: (w: Weapon) => void; cycle: () => void; mute: (value: boolean) => void; destroy: () => void };
 export function mountGame(parent: HTMLElement, onChange: (run: Run) => void): GameHandle {
   let run = new Run();
   let scene: PlayScene;
   let muted = false;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   class PlayScene extends Phaser.Scene {
+    maze!: Phaser.GameObjects.Graphics;
     actors!: Phaser.GameObjects.Graphics;
     music?: Phaser.Sound.BaseSound;
     alarm?: Phaser.Sound.BaseSound;
     preload() { for (const [name, url] of Object.entries(sounds())) this.load.audio(name, url); }
     create() {
       scene = this;
-      drawMaze(this.add.graphics()); this.actors = this.add.graphics();
+      this.maze = this.add.graphics(); drawMaze(this.maze, run.level); this.actors = this.add.graphics();
       this.music = this.sound.add('music', { loop: true, volume: .4 });
       this.alarm = this.sound.add('alarm', { loop: true, volume: .3 });
       onChange(run);
@@ -42,9 +44,22 @@ export function mountGame(parent: HTMLElement, onChange: (run: Run) => void): Ga
   }
   const game = new Phaser.Game({ type: Phaser.AUTO, parent, width: WIDTH, height: HEIGHT, backgroundColor: '#10170e', scene: PlayScene, render: { antialias: true }, scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH }, input: { keyboard: false }, audio: { disableWebAudio: false } });
   return {
+    load(level) {
+      if (!scene) return false;
+      const next = new Run(level);
+      scene.tweens.killAll();
+      scene.children.list.filter(child => child !== scene.maze && child !== scene.actors).forEach(child => child.destroy());
+      scene.sound.stopAll();
+      run = next;
+      game.scale.setGameSize(level.maze[0].length * TILE, level.maze.length * TILE);
+      drawMaze(scene.maze, run.level);
+      drawActors(scene.actors, run, 0, reduced);
+      onChange(run);
+      return true;
+    },
     start() {
       if (!scene) return;
-      if (run.phase === 'won' || run.phase === 'lost') run = new Run();
+      if (run.phase === 'won' || run.phase === 'lost') run = new Run(run.level);
       if (run.phase === 'paused') run.pause(); else run.start();
       const manager = scene.sound as Phaser.Sound.WebAudioSoundManager;
       if (manager.context?.state === 'suspended') void manager.context.resume().catch(() => { /* Audio is optional; gameplay remains available. */ });

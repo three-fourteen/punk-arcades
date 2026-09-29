@@ -15,7 +15,7 @@
     "dev:status": "astro dev status",
     "dev:logs": "astro dev logs",
     "check": "astro check",
-    "test": "node --experimental-strip-types --test tests/model.test.ts",
+    "test": "node --experimental-strip-types --test tests/model.test.ts tests/levels.test.ts",
     "test:browser": "playwright test",
     "verify": "pnpm check && pnpm test && pnpm build"
   },
