@@ -23,6 +23,9 @@ pnpm-debug.log*
 # jetbrains setting folder
 .idea/
 
+# local VS Code settings
+.vscode/
+
 # local test reports and package store
 playwright-report/
 test-results/
