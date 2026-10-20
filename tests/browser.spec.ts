@@ -120,6 +120,7 @@ test('local import previews, exports, plays, wins, restarts, and survives a fail
 test('JSON editing repairs validation errors and agent fallback is usable', async ({ page }) => {
   await page.addInitScript(() => Object.defineProperty(document, 'modelContext', { value: undefined, configurable: true }));
   await page.goto('/games/punk-man');
+  await page.getByText('Levels & Level Lab', { exact: true }).click();
   await page.getByRole('button', { name: 'Create with an agent', exact: true }).click();
   await expect(page.locator('#level-agent-status')).toContainText('unavailable');
   await page.locator('#level-brief').fill('Two routes and a bolt pickup');
@@ -146,6 +147,7 @@ test('WebMCP registration and agent draft repair use the visible player-controll
     } });
   });
   await page.goto('/games/punk-man');
+  await page.getByText('Levels & Level Lab', { exact: true }).click();
   await page.getByRole('button', { name: 'Create with an agent', exact: true }).click();
   await expect(page.locator('#level-agent-status')).toContainText('tools are ready');
   const call = (name: string, args = {}) => page.evaluate(async ({ name, args }) => {
@@ -175,6 +177,8 @@ test('custom level preview and play fit a touch viewport', async ({ browser }) =
   await expect(page.locator('#level-lab')).toBeHidden();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.getByRole('button', { name: 'Pause game', exact: true }).tap();
+  await expect(page.getByText('Levels & Level Lab', { exact: true })).toBeVisible();
+  await page.getByText('Levels & Level Lab', { exact: true }).click();
   await expect(page.getByRole('button', { name: 'Load level', exact: true })).toBeVisible();
   await context.close();
 });
