@@ -1,4 +1,5 @@
 export type Point = { x: number; y: number };
+// Legacy poster artwork; gameplay always supplies its level maze explicitly.
 export const MAZE = [
   '#####################',
   '#P....#.......#....E#',
@@ -25,12 +26,12 @@ export const EXIT: Point = { x: 19, y: 1 };
 export const REQUIRED_CHARGES = 30;
 export const ALARM_MS = 45000;
 export const key = (p: Point) => `${p.x},${p.y}`;
-export const walkable = (p: Point, maze: readonly string[] = MAZE) => Boolean(maze[p.y]?.[p.x] && maze[p.y][p.x] !== '#');
+export const walkable = (p: Point, maze: readonly string[]) => Boolean(maze[p.y]?.[p.x] && maze[p.y][p.x] !== '#');
 export const distance = (a: Point, b: Point) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 export const DIRECTIONS = { up: { x: 0, y: -1 }, right: { x: 1, y: 0 }, down: { x: 0, y: 1 }, left: { x: -1, y: 0 } } as const;
 export type Direction = keyof typeof DIRECTIONS;
 export const add = (a: Point, b: Point): Point => ({ x: a.x + b.x, y: a.y + b.y });
-export function pathTo(from: Point, target: Point, maze: readonly string[] = MAZE): Point[] {
+export function pathTo(from: Point, target: Point, maze: readonly string[]): Point[] {
   const queue: Point[][] = [[from]];
   const visited = new Set([key(from)]);
   for (let i = 0; i < queue.length; i++) {

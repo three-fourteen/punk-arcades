@@ -31,8 +31,10 @@ The project is also an ongoing experiment. Claude, Codex, Gemini, and other agen
 
 An arcade maze escape game with a grimy neon cyberpunk look.
 
+- Learn through five progressively more complex levels, starting with charge trails and two chasers.
+- Unlock stages by winning; local saved progress resumes at the next unfinished stage. Use Reset campaign to clear completion and unlocks and start again from level 1.
 - Gather charges instead of clearing the entire maze.
-- Use scarce improvised weapons to create openings.
+- Fire visible Scrap bolt projectiles, stun with EMP, and push enemies with ram.
 - Find the rare robotic-jaw pickup to consume a nearby ghost-drone.
 - Trigger the final alarm and reach the exit before lockdown.
 - Play with keyboard controls on desktop or a virtual stick and action buttons on touch devices.
@@ -42,11 +44,11 @@ The ghost-drones keep the rounded floating silhouette and directional eyes of cl
 
 ### Level Lab
 
-On `/games/punk-man`, choose **Load level** to import a JSON file. Review the maze preview and validation feedback, then choose **Play level**. Use **Edit JSON / try again** to adjust a draft or **Use built-in example** to start from the original maze.
+On `/games/punk-man`, choose **Load level** to import a JSON file. Review the maze preview and validation feedback, then choose **Play level**. Use **Edit JSON / try again** to adjust a draft or **Use built-in example** to start from First Spark. The preset selector provides all five stages for authoring.
 
 **Download JSON** saves the draft; **Download current level** saves the level being played. Levels stay in the current tab, so download your work before refreshing or leaving. Files are processed locally with no accounts or server storage.
 
-**Create with an agent** prepares a prompt for your own compatible browser agent. WebMCP tools let it create, validate, preview, and export a draft; the player chooses when to play. There is no built-in chat model. If WebMCP is unavailable, give an agent the downloaded example and import its resulting JSON file. Live agent compatibility remains unverified; automated checks use a mock of the browser API.
+**Create with an agent** prepares a prompt for your own compatible browser agent. WebMCP tools expose all five presets and their mechanics, and let it create, validate, preview, and export a draft; the player chooses when to play. There is no built-in chat model. If WebMCP is unavailable, give an agent the downloaded example and import its resulting JSON file. Live agent compatibility remains unverified; automated checks use a mock of the browser API.
 
 See the [level format and agent workflow](docs/technical/level-lab.md) for a complete example, supported fields, limits, and tool names.
 

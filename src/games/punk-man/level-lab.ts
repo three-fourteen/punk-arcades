@@ -1,4 +1,4 @@
-import { DEFAULT_LEVEL } from './default-level.ts';
+import { DEFAULT_LEVEL, LEVEL_PRESETS } from './default-level.ts';
 import { LEVEL_SCHEMA, MAX_LEVEL_BYTES, parseLevel, serializeLevel } from './level.ts';
 import type { LevelDefinition, LevelResult } from './level.ts';
 
@@ -23,6 +23,7 @@ export class LevelDraft {
         charges: result.level.charges.length, requiredCharges: result.level.requiredCharges,
         pickups: result.level.pickups.length, drones: result.level.drones.length,
         alarmMs: result.level.alarmMs,
+        startingAmmo: result.level.startingAmmo ?? { pulse: 1, bolt: 0, shove: 0 },
       } } : {}),
     };
   }
@@ -46,7 +47,24 @@ export function levelTools(draft: LevelDraft, show: () => void): LabTool[] {
   });
   return [
     tool('punk_man_get_level_context', 'Read the player design brief, current draft JSON, format schema, and a working example. Coordinates are zero-based. # is wall, . is empty floor; charges are explicit coordinates. The player starts the level using Play level.', empty, true,
-      () => ({ brief: draft.brief, draft: draft.source, schema: LEVEL_SCHEMA, example: DEFAULT_LEVEL, ...draft.report() })),
+      () => ({ brief: draft.brief, draft: draft.source, schema: LEVEL_SCHEMA, example: DEFAULT_LEVEL,
+        presets: LEVEL_PRESETS,
+        mechanics: {
+          startingAmmo: 'Optional object with pulse, bolt, shove integers 0–99. Omitted: pulse 1, bolt 0, shove 0. Pickups add two shots and select that weapon.',
+          bolt: 'Visible projectile: 12 tiles/second, five-tile range; first wall or active drone stops it. Hit removes a drone for 6.5 seconds and rewards 150 points.',
+          pulse: 'Stuns drones within Manhattan distance 3, through walls, for 3.5 seconds.',
+          shove: 'Pushes drones in the first two forward floor tiles up to three tiles, then stuns for 2.5 seconds. Walls block it.',
+          jaw: 'Eight seconds of consuming drones on contact: +2 charges and 200 points; drone returns after eight seconds.',
+          enemies: { chaser: 'Follows the player.', ambusher: 'Targets up to four tiles ahead of player facing.', sentry: 'Patrols authored waypoints, pursuing players within five tiles of home.' },
+          teaching: 'Use charge trails, pickups before encounters, retreat loops, and visible gates. No tutorial popups. Agents edit drafts only; Play level is a player action.',
+        }, ...draft.report() })),
+    tool('punk_man_use_level_preset', 'Copy any built-in campaign preset into the draft and preview it. Does not start a run or unlock campaign progress.',
+      { type: 'object', properties: { presetId: { type: 'string', enum: LEVEL_PRESETS.map(p => p.id) } }, required: ['presetId'], additionalProperties: false }, false,
+      input => {
+        const preset = LEVEL_PRESETS.find(p => p.id === input.presetId);
+        if (!preset) return { ok: false, errors: [{ path: 'presetId', message: 'Choose a known built-in preset.' }] };
+        draft.update(serializeLevel(preset.level)); show(); return draft.report();
+      }),
     tool('punk_man_create_level', 'Create or replace the local level draft with a complete level definition, then validate and preview it. Does not load or start a run. Repair validation errors by submitting the full corrected definition.', { type: 'object', properties: { level: LEVEL_SCHEMA }, required: ['level'], additionalProperties: false }, false,
       input => {
         const source = JSON.stringify(input.level);
@@ -88,7 +106,8 @@ export function mountLevelLab(load: (level: LevelDefinition) => boolean, onOpen:
     node('level-summary').textContent = '';
     if (result.ok) {
       const l = result.level;
-      node('level-summary').textContent = `${l.name}${l.author ? ` by ${l.author}` : ''} · ${l.maze[0].length} × ${l.maze.length} · Collect ${l.requiredCharges} of ${l.charges.length} charges · ${l.alarmMs / 1000}s alarm · ${l.pickups.length} pickups · ${l.drones.length} drones`;
+      const ammo = l.startingAmmo ?? { pulse: 1, bolt: 0, shove: 0 };
+      node('level-summary').textContent = `${l.name}${l.author ? ` by ${l.author}` : ''} · ${l.maze[0].length} × ${l.maze.length} · Collect ${l.requiredCharges} of ${l.charges.length} charges · ${l.alarmMs / 1000}s alarm · ${l.pickups.length} pickups · ${l.drones.length} drones · Starting ammo: EMP ${ammo.pulse}, bolt ${ammo.bolt}, ram ${ammo.shove}`;
       preview.width = l.maze[0].length * 16; preview.height = l.maze.length * 16;
       const ctx = preview.getContext('2d');
       if (ctx) {
@@ -108,6 +127,10 @@ export function mountLevelLab(load: (level: LevelDefinition) => boolean, onOpen:
   node('level-validate').addEventListener('click', () => { draft.update(source.value); refresh(); });
   node('level-edit').addEventListener('click', () => { node<HTMLDetailsElement>('level-json-editor').open = true; source.focus(); });
   node('level-template').addEventListener('click', () => { draft.update(serializeLevel(DEFAULT_LEVEL)); show(); });
+  node('level-preset').addEventListener('change', event => {
+    const preset = LEVEL_PRESETS.find(p => p.id === (event.target as HTMLSelectElement).value);
+    if (preset) { draft.update(serializeLevel(preset.level)); show(); }
+  });
   const file = node<HTMLInputElement>('level-file');
   node('level-load').addEventListener('click', () => { onOpen(); file.click(); });
   file.addEventListener('change', async () => {
@@ -148,5 +171,8 @@ export function mountLevelLab(load: (level: LevelDefinition) => boolean, onOpen:
     node('level-agent-status').textContent = available ? 'WebMCP tools are ready. Open your compatible browser agent and use the prompt below.' : 'WebMCP is unavailable in this browser. Give an agent the downloaded example and your prompt, then load its JSON file here.';
   }).catch(() => { controller.abort(); node('level-agent-status').textContent = 'Agent tools could not register. You can still load and edit JSON files.'; });
   refresh();
-  return { ready() { if (!ready) { ready = true; refresh(); } }, destroy() { controller.abort(); } };
+  return {
+    setActive(level: LevelDefinition) { active = level; node('level-active').textContent = level.name; },
+    ready() { if (!ready) { ready = true; refresh(); } }, destroy() { controller.abort(); },
+  };
 }

@@ -15,6 +15,7 @@ export type LevelDefinition = {
   drones: { kind: DroneKind; home: Point; patrol?: Point[] }[];
   requiredCharges: number;
   alarmMs: number;
+  startingAmmo?: { pulse: number; bolt: number; shove: number };
 };
 export type LevelIssue = { path: string; message: string };
 export type LevelResult = { ok: true; level: LevelDefinition; errors: LevelIssue[]; warnings: string[] } |
@@ -42,6 +43,11 @@ export const LEVEL_SCHEMA: Schema = {
     drones: { type: 'array', maxItems: 16, items: { type: 'object', additionalProperties: false, required: ['kind', 'home'], properties: { kind: { type: 'string', enum: ['chaser', 'ambusher', 'sentry'] }, home: point, patrol: { type: 'array', minItems: 1, maxItems: 16, items: point } } } },
     requiredCharges: { type: 'integer', minimum: 1, maximum: 1271 },
     alarmMs: { type: 'integer', minimum: 1000, maximum: 300000 },
+    startingAmmo: { type: 'object', additionalProperties: false, required: ['pulse', 'bolt', 'shove'], properties: {
+      pulse: { type: 'integer', minimum: 0, maximum: 99 },
+      bolt: { type: 'integer', minimum: 0, maximum: 99 },
+      shove: { type: 'integer', minimum: 0, maximum: 99 },
+    } },
   },
 };
 

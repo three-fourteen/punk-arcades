@@ -1,9 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { DEFAULT_LEVEL as ORIGINAL_LEVEL } from './fixtures/original-level.ts';
 import { Run } from '../src/games/punk-man/model.ts';
-import { MAZE, START, EXIT, pathTo, key, walkable, DIRECTIONS, ALARM_MS, REQUIRED_CHARGES } from '../src/games/punk-man/map.ts';
+import { MAZE, START, EXIT, pathTo as findPath, key, walkable as isWalkable, DIRECTIONS, ALARM_MS, REQUIRED_CHARGES } from '../src/games/punk-man/map.ts';
 import type { Direction, Point } from '../src/games/punk-man/map.ts';
-function safeRun() { const run = new Run(); run.start(); run.drones.forEach(d => d.removed = 1e8); return run; }
+const pathTo = (from: Point, to: Point) => findPath(from, to, ORIGINAL_LEVEL.maze);
+const walkable = (point: Point) => isWalkable(point, ORIGINAL_LEVEL.maze);
+function safeRun() { const run = new Run(ORIGINAL_LEVEL); run.start(); run.drones.forEach(d => d.removed = 1e8); return run; }
 function advance(run: Run, ms: number) { for (let i = 0; i < ms; i += 15) run.update(Math.min(15, ms - i)); }
 function go(run: Run, target: Point) {
   for (const next of pathTo(run.player, target)) {
@@ -12,14 +15,14 @@ function go(run: Run, target: Point) {
   }
 }
 test('maze is rectangular; every floor, pickup, drone spawn and exit is reachable', () => {
-  const run = new Run(); assert.ok(run.charges.size > REQUIRED_CHARGES);
+  const run = new Run(ORIGINAL_LEVEL); assert.ok(run.charges.size > REQUIRED_CHARGES);
   MAZE.forEach((row,y) => { assert.equal(row.length, 21); [...row].forEach((c,x) => { if(c !== '#' && key({x,y}) !== key(START)) assert.ok(pathTo(START,{x,y}).length, `${x},${y}`); }); });
   for (const tile of run.pickups.keys()) { const [x,y] = tile.split(',').map(Number); assert.ok(walkable({x,y})); }
   for (const drone of run.drones) assert.ok(walkable(drone.home));
   assert.ok(pathTo(START, EXIT).length);
 });
 test('ready state does not move; walls block movement; queued turns work', () => {
-  const run = new Run(); run.steer('right'); advance(run, 500); assert.deepEqual(run.player, START);
+  const run = new Run(ORIGINAL_LEVEL); run.steer('right'); advance(run, 500); assert.deepEqual(run.player, START);
   run.start(); run.steer('up'); advance(run, 135); assert.deepEqual(run.player,{x:2,y:1});
   advance(run, 540); assert.deepEqual(run.player,{x:5,y:1});
   run.steer('left'); advance(run, 135); run.steer('down'); advance(run,135); assert.deepEqual(run.player,{x:4,y:2});
@@ -47,8 +50,8 @@ test('locked exit does not win; timeout loses; pause freezes every timer', () =>
 test('EMP stuns in radius, bolt cannot pass walls, ram pushes and stuns', () => {
   const run = safeRun(), drone = run.drones[0]; drone.removed=0; drone.position={x:3,y:1};
   run.fire(); assert.equal(drone.stunned,3500);
-  run.select('bolt'); run.ammo.bolt=2; run.direction='right'; drone.position={x:7,y:1}; run.fire(); assert.equal(drone.removed,0);
-  drone.position={x:4,y:1}; run.fire(); assert.equal(drone.removed,6500);
+  run.select('bolt'); run.ammo.bolt=2; run.direction='right'; drone.position={x:7,y:1}; run.fire(); advance(run,500); assert.equal(drone.removed,0);
+  drone.position={x:4,y:1}; run.fire(); assert.equal(drone.removed,0); advance(run,250); assert.ok(drone.removed>0);
   drone.removed=0; drone.position={x:2,y:1}; run.select('shove'); run.ammo.shove=1; run.fire(); assert.deepEqual(drone.position,{x:5,y:1}); assert.equal(drone.stunned,2500);
 });
 test('jaw consumes on contact, rewards charges, expires and drones return', () => {
@@ -63,7 +66,7 @@ test('damage has a grace period and three hits end the run', () => {
   assert.equal(run.phase,'lost');
 });
 test('three drone personalities chase, anticipate and guard differently', () => {
-  const run=new Run(); run.start(); run.player={x:1,y:1}; run.direction='right'; advance(run,370);
+  const run=new Run(ORIGINAL_LEVEL); run.start(); run.player={x:1,y:1}; run.direction='right'; advance(run,370);
   assert.deepEqual(run.drones[0].position,pathTo({x:19,y:9},{x:1,y:1})[0]);
   assert.deepEqual(run.drones[1].position,pathTo({x:9,y:7},{x:5,y:1})[0]);
   assert.deepEqual(run.drones[2].position,pathTo({x:15,y:15},{x:19,y:15})[0]);

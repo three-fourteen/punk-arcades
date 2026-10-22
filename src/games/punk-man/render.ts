@@ -3,8 +3,6 @@ import type { LevelDefinition } from './level';
 import type { Run } from './model';
 import { drawPunk } from './punk';
 export const TILE = 32;
-export const WIDTH = 672;
-export const HEIGHT = 608;
 const horizontalFacing = new WeakMap<Run, number>();
 const center = (n: number) => n * TILE + TILE / 2;
 export function drawMaze(g: Phaser.GameObjects.Graphics, level: LevelDefinition) {
@@ -45,6 +43,10 @@ export function drawActors(g: Phaser.GameObjects.Graphics, run: Run, time: numbe
   const ex = center(run.level.exit.x), ey = center(run.level.exit.y);
   g.fillStyle(run.alarm ? 0xd7f542 : 0x465039, run.alarm ? pulse : 1); g.fillRoundedRect(ex - 13, ey - 13, 26, 26, 2);
   g.lineStyle(2, run.alarm ? 0x10170e : 0xb0b9a2); g.lineBetween(ex - 7, ey, ex + 7, ey); g.lineBetween(ex + 2, ey - 5, ex + 7, ey); g.lineBetween(ex + 2, ey + 5, ex + 7, ey);
+  if (!run.alarm) {
+    g.lineStyle(2, 0xb0b9a2);
+    for (const offset of [-7, 0, 7]) g.lineBetween(ex + offset, ey - 10, ex + offset, ey + 10);
+  }
   for (const drone of run.drones) {
     if (drone.removed > 0) continue;
     const px = center(drone.position.x), py = center(drone.position.y) + (reduced || drone.stunned ? 0 : Math.sin(time / 170 + drone.home.x) * 1.5);
@@ -58,6 +60,18 @@ export function drawActors(g: Phaser.GameObjects.Graphics, run: Run, time: numbe
     if (drone.kind === 'chaser') { g.lineStyle(2, color); g.lineBetween(px, py - 12, px, py - 16); }
     if (drone.kind === 'sentry') { g.lineStyle(2, 0x6a508a); g.lineBetween(px - 10, py + 7, px + 10, py + 7); }
     if (drone.stunned > 0) { g.lineStyle(1, 0xf4f4db); g.lineBetween(px - 4, py - 15, px, py - 18); g.lineBetween(px, py - 18, px + 4, py - 15); }
+  }
+  for (const shot of run.projectiles) {
+    const px = center(shot.position.x), py = center(shot.position.y);
+    const dx = shot.direction === 'left' ? -1 : shot.direction === 'right' ? 1 : 0;
+    const dy = shot.direction === 'up' ? -1 : shot.direction === 'down' ? 1 : 0;
+    g.lineStyle(7, 0x70dacd, .25); g.lineBetween(px - dx * 10, py - dy * 10, px + dx * 3, py + dy * 3);
+    g.lineStyle(3, 0xe5fffc); g.lineBetween(px - dx * 8, py - dy * 8, px + dx * 3, py + dy * 3);
+  }
+  if (!reduced) for (const effect of run.effects) {
+    const px = center(effect.position.x), py = center(effect.position.y);
+    g.lineStyle(2, effect.kind === 'charge' ? 0xd7f542 : 0xe5fffc, Math.min(1, effect.remaining / 120));
+    g.strokeCircle(px, py, effect.kind === 'muzzle' ? 6 : 6 + (240 - effect.remaining) / 18);
   }
   const px = center(run.player.x), py = center(run.player.y);
   if (run.invulnerable > 0 || run.jaw > 0) { g.lineStyle(2, run.jaw > 0 ? 0xf4e3a1 : 0xffffff, pulse); g.strokeCircle(px, py, 15); }

@@ -1,13 +1,14 @@
 import Phaser from 'phaser';
 import { Run } from './model';
 import { sounds } from './audio';
-import { drawMaze, drawActors, WIDTH, HEIGHT, TILE } from './render';
+import { drawMaze, drawActors, TILE } from './render';
+import { DEFAULT_LEVEL } from './default-level';
 import type { LevelDefinition } from './level';
 import type { Direction } from './map';
 import type { Weapon } from './model';
 export type GameHandle = { load: (level: LevelDefinition) => boolean; start: () => void; pause: () => void; steer: (d: Direction) => void; fire: () => void; select: (w: Weapon) => void; cycle: () => void; mute: (value: boolean) => void; destroy: () => void };
-export function mountGame(parent: HTMLElement, onChange: (run: Run) => void): GameHandle {
-  let run = new Run();
+export function mountGame(parent: HTMLElement, onChange: (run: Run) => void, initialLevel: LevelDefinition = DEFAULT_LEVEL): GameHandle {
+  let run = new Run(initialLevel);
   let scene: PlayScene;
   let muted = false;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -29,7 +30,7 @@ export function mountGame(parent: HTMLElement, onChange: (run: Run) => void): Ga
       drawActors(this.actors, run, run.elapsed, reduced);
       for (const event of run.events.splice(0)) {
         if (event !== 'alarm') this.sound.play(event, { volume: event === 'charge' ? .3 : .55 });
-        if (event === 'fire') {
+        if (event === 'fire' && run.selected !== 'bolt' && !reduced) {
           const ring = this.add.circle(run.player.x * 32 + 16, run.player.y * 32 + 16, 12, 0x70dacd, .25).setStrokeStyle(2, 0x70dacd);
           this.tweens.add({ targets: ring, scale: run.selected === 'pulse' ? 8 : 3, alpha: 0, duration: reduced ? 100 : 280, onComplete: () => ring.destroy() });
         }
@@ -42,7 +43,11 @@ export function mountGame(parent: HTMLElement, onChange: (run: Run) => void): Ga
       onChange(run);
     }
   }
-  const game = new Phaser.Game({ type: Phaser.AUTO, parent, width: WIDTH, height: HEIGHT, backgroundColor: '#10170e', scene: PlayScene, render: { antialias: true }, scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH }, input: { keyboard: false }, audio: { disableWebAudio: false } });
+  const game = new Phaser.Game({ type: Phaser.AUTO, parent, width: initialLevel.maze[0].length * TILE, height: initialLevel.maze.length * TILE, backgroundColor: '#10170e', scene: PlayScene, render: { antialias: true }, scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH }, input: { keyboard: false }, audio: { disableWebAudio: false } });
+  // Compact touch layout and differently shaped levels resize the container
+  // without a window resize. Recompute Phaser's centering in that case too.
+  const resize = new ResizeObserver(() => game.scale.refresh());
+  resize.observe(parent);
   return {
     load(level) {
       if (!scene) return false;
@@ -69,6 +74,6 @@ export function mountGame(parent: HTMLElement, onChange: (run: Run) => void): Ga
     pause() { run.pause(); onChange(run); },
     steer(direction) { run.steer(direction); }, fire() { run.fire(); }, select(weapon) { run.select(weapon); }, cycle() { run.cycle(); },
     mute(value) { muted = value; if (scene) scene.sound.mute = value; },
-    destroy() { game.destroy(true); },
+    destroy() { resize.disconnect(); game.destroy(true); },
   };
 }
