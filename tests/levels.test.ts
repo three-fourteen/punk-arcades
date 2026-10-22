@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DEFAULT_LEVEL } from '../src/games/punk-man/default-level.ts';
+import { DEFAULT_LEVEL, LEVEL_PRESETS } from '../src/games/punk-man/default-level.ts';
 import { parseLevel, serializeLevel, validateLevel } from '../src/games/punk-man/level.ts';
 import type { LevelDefinition } from '../src/games/punk-man/level.ts';
 import { Run } from '../src/games/punk-man/model.ts';
@@ -13,12 +13,12 @@ const small = (): LevelDefinition => ({
 });
 
 test('built-in and custom definitions survive export/import without losing placement', () => {
-  for (const level of [DEFAULT_LEVEL, small()]) {
+  for (const level of [...LEVEL_PRESETS.map(p => p.level), small()]) {
     const result = parseLevel(serializeLevel(level));
     assert.ok(result.ok);
     assert.deepEqual(result.level, level);
   }
-  assert.equal(new Run().charges.size, 84);
+  assert.equal(new Run().charges.size, DEFAULT_LEVEL.charges.length);
 });
 
 test('malformed, oversized, unsupported, and out-of-bounds definitions are rejected', () => {
@@ -103,7 +103,35 @@ test('WebMCP registration is feature-detected and tied to the page lifecycle', a
   assert.equal(await registerLevelTools({ registerTool: async (tool, options) => {
     registered.push(tool.name); assert.equal(options.signal, controller.signal);
   } }, tools, controller.signal), true);
-  assert.equal(registered.length, 5);
+  assert.equal(registered.length, tools.length);
   controller.abort();
   assert.equal(await registerLevelTools({ registerTool: () => assert.fail('aborted registration') }, tools, controller.signal), false);
+});
+
+
+test('starting ammo is optional, validated, copied, and exported', () => {
+  assert.deepEqual(new Run(small()).ammo, { pulse: 1, bolt: 0, shove: 0 });
+  const level = { ...small(), startingAmmo: { pulse: 0, bolt: 5, shove: 2 } };
+  const run = new Run(level); level.startingAmmo.bolt = 9;
+  assert.equal(run.ammo.bolt, 5);
+  for (const startingAmmo of [{ bolt: 1 }, { pulse: -1, bolt: 0, shove: 0 }, { pulse: 0, bolt: 100, shove: 0 }, { pulse: 0, bolt: 1.5, shove: 0 }]) {
+    assert.equal(validateLevel({ ...small(), startingAmmo }).ok, false);
+  }
+});
+
+test('WebMCP discovers every preset and mechanic without starting or unlocking a run', async () => {
+  const draft = new LevelDraft(); let previews = 0;
+  const tools = levelTools(draft, () => previews++);
+  const call = async (suffix: string, input = {}) => JSON.parse(await tools.find(t => t.name === `punk_man_${suffix}`)!.execute(input));
+  const context = await call('get_level_context');
+  assert.equal(context.presets.length, 5);
+  assert.match(context.mechanics.bolt, /12 tiles/);
+  assert.ok(context.schema.properties.startingAmmo);
+  for (const preset of LEVEL_PRESETS) {
+    assert.equal((await call('use_level_preset', { presetId: preset.id })).ok, true);
+    assert.deepEqual(JSON.parse((await call('export_level')).json), preset.level);
+  }
+  const before = draft.source;
+  assert.equal((await call('use_level_preset', { presetId: 'unknown' })).ok, false);
+  assert.equal(draft.source, before); assert.equal(previews, 5);
 });

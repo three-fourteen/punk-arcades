@@ -8,6 +8,8 @@ export type Weapon = 'pulse' | 'bolt' | 'shove';
 export type Phase = 'ready' | 'playing' | 'paused' | 'won' | 'lost';
 export type Drone = { kind: 'chaser' | 'ambusher' | 'sentry'; position: Point; home: Point; stunned: number; removed: number; clock: number; patrol: number; waypoints: Point[] };
 export type GameEvent = 'charge' | 'pickup' | 'fire' | 'bite' | 'hit' | 'alarm' | 'won' | 'lost';
+export type Projectile = { position: Point; direction: Direction; remaining: number };
+export type Effect = { position: Point; kind: 'muzzle' | 'impact' | 'charge' | 'pickup'; remaining: number };
 export const WEAPONS: Weapon[] = ['pulse', 'bolt', 'shove'];
 export const WEAPON_NAMES = { pulse: 'EMP pulse', bolt: 'Scrap bolt', shove: 'Ram blast' };
 export class Run {
@@ -28,6 +30,8 @@ export class Run {
   invulnerable = 0;
   selected: Weapon = 'pulse';
   ammo = { pulse: 1, bolt: 0, shove: 0 };
+  projectiles: Projectile[] = [];
+  effects: Effect[] = [];
   drones: Drone[];
   events: GameEvent[] = [];
   message: string;
@@ -36,6 +40,7 @@ export class Run {
     const result = validateLevel(level);
     if (!result.ok) throw new Error(result.errors.map(e => `${e.path}: ${e.message}`).join('\n'));
     this.level = result.level;
+    this.ammo = { ...(this.level.startingAmmo ?? this.ammo) };
     const freeze = (value: object) => { Object.values(value).forEach(v => { if (v && typeof v === 'object') freeze(v); }); Object.freeze(value); };
     freeze(this.level);
     this.player = { ...this.level.start };
@@ -57,6 +62,11 @@ export class Run {
     this.ammo[this.selected]--;
     this.events.push('fire');
     this.message = `${WEAPON_NAMES[this.selected]} fired.`;
+    if (this.selected === 'bolt') {
+      this.projectiles.push({ position: { ...this.player }, direction: this.direction, remaining: 5 });
+      this.effects.push({ position: { ...this.player }, kind: 'muzzle', remaining: 100 });
+      return;
+    }
     const forward = DIRECTIONS[this.direction];
     const ray: string[] = [];
     let p = this.player;
@@ -64,7 +74,6 @@ export class Run {
     for (const drone of this.drones) {
       if (drone.removed > 0) continue;
       if (this.selected === 'pulse' && distance(drone.position, this.player) <= 3) drone.stunned = 3500;
-      if (this.selected === 'bolt' && ray.includes(key(drone.position))) { drone.removed = 6500; this.score += 150; }
       if (this.selected === 'shove' && ray.slice(0, 2).includes(key(drone.position))) {
         for (let i = 0; i < 3; i++) { const next = add(drone.position, forward); if (this.walkable(next)) drone.position = next; else break; }
         drone.stunned = 2500;
@@ -79,6 +88,8 @@ export class Run {
   }
   private tick(dt: number) {
     this.elapsed += dt;
+    this.effects = this.effects.filter(effect => (effect.remaining -= dt) > 0);
+    this.moveProjectiles(dt);
     this.jaw = Math.max(0, this.jaw - dt);
     this.invulnerable = Math.max(0, this.invulnerable - dt);
     if (this.alarm) {
@@ -102,19 +113,50 @@ export class Run {
       if (drone.stunned > 0) { drone.stunned = Math.max(0, drone.stunned - dt); continue; }
       drone.clock += dt;
       const speed = ({ chaser: 270, ambusher: 310, sentry: 360 }[drone.kind]) * (this.alarm ? 0.7 : 1);
-      if (drone.clock >= speed) { drone.clock -= speed; this.moveDrone(drone); this.collide(); }
+      if (drone.clock >= speed) {
+        drone.clock -= speed; this.moveDrone(drone);
+        // Resolve a drone stepping into a shot before contact damage.
+        this.moveProjectiles(0); this.collide();
+      }
       if (this.phase !== 'playing') return;
     }
   }
+  private moveProjectiles(dt: number) {
+    this.projectiles = this.projectiles.filter(shot => {
+      const forward = DIRECTIONS[shot.direction];
+      let travel = Math.min(shot.remaining, dt * 12 / 1000);
+      // Sample the segment at <= 0.1 tile; dt=0 checks the current position.
+      // This also catches enemies moving into a stationary projectile this tick.
+      do {
+        const step = Math.min(travel, 0.1);
+        shot.position.x += forward.x * step;
+        shot.position.y += forward.y * step;
+        shot.remaining -= step;
+        travel -= step;
+        const tile = { x: Math.floor(shot.position.x + 0.5), y: Math.floor(shot.position.y + 0.5) };
+        const drone = this.drones.find(d => d.removed === 0 && key(d.position) === key(tile));
+        if (!this.walkable(tile) || drone) {
+          if (drone) { drone.removed = 6500; this.score += 150; }
+          this.effects.push({ position: { ...shot.position }, kind: 'impact', remaining: 160 });
+          return false;
+        }
+      } while (travel > 0.00001);
+      return shot.remaining > 0.00001;
+    });
+  }
   private collect() {
     const tile = key(this.player);
-    if (this.charges.delete(tile)) { this.collected++; this.score += 25; this.events.push('charge'); }
+    if (this.charges.delete(tile)) {
+      this.collected++; this.score += 25; this.events.push('charge');
+      this.effects.push({ position: { ...this.player }, kind: 'charge', remaining: 180 });
+    }
     const pickup = this.pickups.get(tile);
     if (pickup) {
       this.pickups.delete(tile);
       if (pickup === 'jaw') { this.jaw = 8000; this.message = 'JAW ONLINE · 8 seconds. Touch drones to consume them.'; }
       else { this.ammo[pickup] += 2; this.selected = pickup; this.message = `${WEAPON_NAMES[pickup]} +2. Space to fire.`; }
       this.events.push('pickup');
+      this.effects.push({ position: { ...this.player }, kind: 'pickup', remaining: 240 });
     }
     this.checkAlarm();
     if (tile === key(this.level.exit)) {
